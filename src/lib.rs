@@ -171,6 +171,11 @@ impl Universe {
         self.cells = FixedBitSet::with_capacity((self.width * height) as usize);
     }
 
+    pub fn toggle_cell(&mut self, row: u32, column: u32) {
+        let idx = self.get_index(row, column);
+        self.cells.toggle(idx);
+    }
+
     pub fn cells(&self) -> *const u32 {
         self.cells.as_slice().as_ptr()
     }
