@@ -2,6 +2,7 @@ use fixedbitset::FixedBitSet;
 use js_sys::Math;
 use std::fmt;
 use wasm_bindgen::prelude::*;
+use web_sys;
 
 mod utils;
 
@@ -10,6 +11,13 @@ mod utils;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
 
 #[wasm_bindgen]
 pub struct Universe {
@@ -70,7 +78,16 @@ impl Universe {
                     // All other cells remain in the same state.
                     (some_state, _) => some_state,
                 };
-                next.set(idx, next_state)
+                next.set(idx, next_state);
+
+                if current_state != next_state {
+                    log!(
+                        "cell ({:?}, {:?}) transitioned to {:?} state",
+                        row,
+                        col,
+                        if next_state { "live" } else { "dead" }
+                    );
+                }
             }
         }
 
@@ -78,6 +95,7 @@ impl Universe {
     }
 
     pub fn new(width: u32, height: u32) -> Universe {
+        utils::set_panic_hook();
         let size = (width * height) as usize;
         let mut cells = FixedBitSet::with_capacity(size);
         for idx in 0..size {
@@ -92,6 +110,7 @@ impl Universe {
     }
 
     pub fn new_copperhead(width: u32, height: u32) -> Universe {
+        utils::set_panic_hook();
         let top_offset = 32;
         let left_offset = 32;
         let copperhead = [
