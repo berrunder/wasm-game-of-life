@@ -1,6 +1,7 @@
+use std::fmt;
+
 use fixedbitset::FixedBitSet;
 use js_sys::Math;
-use std::fmt;
 use wasm_bindgen::prelude::*;
 use web_sys;
 
@@ -31,17 +32,25 @@ impl Universe {
         (row * self.width + col) as usize
     }
 
+    // calculate index for outbound coordinates - needed for convinience
+    fn get_index_signed(&self, row: i32, col: i32) -> usize {
+        self.get_index(
+            ((row % self.height as i32 + self.height as i32) % self.height as i32) as u32,
+            ((col % self.width as i32 + self.width as i32) % self.width as i32) as u32,
+        )
+    }
+
     fn live_neighbor_count(&self, row: u32, col: u32) -> u8 {
         let mut count = 0;
-        for delta_row in [self.width - 1, 0, 1].iter().cloned() {
-            for delta_col in [self.height - 1, 0, 1].iter().cloned() {
+        for delta_row in [self.height - 1, 0, 1].iter().cloned() {
+            for delta_col in [self.width - 1, 0, 1].iter().cloned() {
                 if delta_col == 0 && delta_row == 0 {
                     continue;
                 }
 
                 let idx = self.get_index(
-                    (row + delta_row) % self.width,
-                    (col + delta_col) % self.height,
+                    (row + delta_row) % self.height,
+                    (col + delta_col) % self.width,
                 );
                 count += self.cells[idx] as u8
             }
@@ -56,8 +65,8 @@ impl Universe {
     pub fn tick(&mut self) {
         let mut next = self.cells.clone();
 
-        for row in 0..self.width {
-            for col in 0..self.height {
+        for row in 0..self.height {
+            for col in 0..self.width {
                 let live_cnt = self.live_neighbor_count(row, col);
                 let idx = self.get_index(row, col);
                 let current_state = self.cells[idx];
@@ -171,9 +180,38 @@ impl Universe {
         self.cells = FixedBitSet::with_capacity((self.width * height) as usize);
     }
 
-    pub fn toggle_cell(&mut self, row: u32, column: u32) {
-        let idx = self.get_index(row, column);
+    pub fn toggle_cell(&mut self, row: u32, col: u32) {
+        let idx = self.get_index(row, col);
         self.cells.toggle(idx);
+    }
+
+    pub fn draw_glider(&mut self, center_row: u32, center_col: u32) {
+        let row = center_row as i32;
+        let col = center_col as i32;
+        self.set_cells(&[
+            (row, col),
+            (row - 1, col - 1),
+            (row, col + 1),
+            (row + 1, col),
+            (row + 1, col - 1),
+        ])
+    }
+
+    pub fn draw_pulsar(&mut self, center_row: u32, center_col: u32) {
+        let row = center_row as i32;
+        let col = center_col as i32;
+        self.set_cells(&[
+            (row - 6, col - 4), (row - 6, col - 3), (row - 6, col - 2), (row - 6, col + 4), (row - 6, col + 3), (row - 6, col + 2),
+            (row - 4, col - 6), (row - 4, col - 1), (row - 4, col + 1), (row - 4, col + 6),
+            (row - 3, col - 6), (row - 3, col - 1), (row - 3, col + 1), (row - 3, col + 6),
+            (row - 2, col - 6), (row - 2, col - 1), (row - 2, col + 1), (row - 2, col + 6),
+            (row - 1, col - 4), (row - 1, col - 3), (row - 1, col - 2), (row - 1, col + 4), (row - 1, col + 3), (row - 1, col + 2),
+            (row + 1, col - 4), (row + 1, col - 3), (row + 1, col - 2), (row + 1, col + 4), (row + 1, col + 3), (row + 1, col + 2),
+            (row + 2, col - 6), (row + 2, col - 1), (row + 2, col + 1), (row + 2, col + 6),
+            (row + 3, col - 6), (row + 3, col - 1), (row + 3, col + 1), (row + 3, col + 6),
+            (row + 4, col - 6), (row + 4, col - 1), (row + 4, col + 1), (row + 4, col + 6),
+            (row + 6, col - 4), (row + 6, col - 3), (row + 6, col - 2), (row + 6, col + 4), (row + 6, col + 3), (row + 6, col + 2),
+        ])
     }
 
     pub fn cells(&self) -> *const u32 {
@@ -203,9 +241,9 @@ impl Universe {
 
     /// Set cells to be alive in a universe by passing the row and column
     /// of each cell as an array.
-    pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
+    pub fn set_cells(&mut self, cells: &[(i32, i32)]) {
         for (row, col) in cells.iter().cloned() {
-            let idx = self.get_index(row, col);
+            let idx = self.get_index_signed(row, col);
             self.cells.set(idx, true);
         }
     }
