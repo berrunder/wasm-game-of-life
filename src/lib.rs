@@ -25,6 +25,7 @@ pub struct Universe {
     width: u32,
     height: u32,
     cells: FixedBitSet,
+    buffer: FixedBitSet,
 }
 
 impl Universe {
@@ -100,7 +101,6 @@ impl Universe {
 impl Universe {
     pub fn tick(&mut self) {
         let _timer = Timer::new("Universe::tick");
-        let mut next = self.cells.clone();
 
         for row in 0..self.height {
             for col in 0..self.width {
@@ -124,17 +124,21 @@ impl Universe {
                     // All other cells remain in the same state.
                     (some_state, _) => some_state,
                 };
-                next.set(idx, next_state);
+                self.buffer.set(idx, next_state);
             }
         }
 
-        self.cells = next
+        // copy buffer to cells
+        for idx in 0..self.cells.len() {
+            self.cells.set(idx, self.buffer[idx]);
+        }
     }
 
     pub fn new(width: u32, height: u32) -> Universe {
         utils::set_panic_hook();
         let size = (width * height) as usize;
         let mut cells = FixedBitSet::with_capacity(size);
+        let buffer = FixedBitSet::with_capacity(size);
         for idx in 0..size {
             cells.set(idx, Math::random() >= 0.5);
         }
@@ -143,6 +147,7 @@ impl Universe {
             width,
             height,
             cells,
+            buffer,
         }
     }
 
@@ -163,6 +168,7 @@ impl Universe {
 
         let size = (width * height) as usize;
         let mut cells = FixedBitSet::with_capacity(size);
+        let buffer = FixedBitSet::with_capacity(size);
         let mut ship_row = 0;
         for cells_row in top_offset + 1..=top_offset + copperhead.len() / 8 {
             let row_offset = ship_row * 8;
@@ -179,6 +185,7 @@ impl Universe {
             width,
             height,
             cells,
+            buffer,
         }
     }
 
