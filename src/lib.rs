@@ -153,6 +153,9 @@ impl Universe {
 
     pub fn new_copperhead(width: u32, height: u32) -> Universe {
         utils::set_panic_hook();
+        let mut universe = Universe::new(width, height);
+        // set width to clear cells
+        universe.set_width(width);
         let top_offset = 32;
         let left_offset = 32;
         let copperhead = [
@@ -166,27 +169,20 @@ impl Universe {
             false, false, true, true, false, false, false,
         ];
 
-        let size = (width * height) as usize;
-        let mut cells = FixedBitSet::with_capacity(size);
-        let buffer = FixedBitSet::with_capacity(size);
         let mut ship_row = 0;
         for cells_row in top_offset + 1..=top_offset + copperhead.len() / 8 {
             let row_offset = ship_row * 8;
             for ship_col in 0..8 {
-                cells.set(
-                    cells_row * width as usize + left_offset + ship_col + 1,
-                    copperhead[row_offset + ship_col],
+                universe.set_cell(
+                    cells_row as u32,
+                    left_offset + ship_col + 1,
+                    copperhead[(row_offset + ship_col) as usize],
                 );
             }
             ship_row += 1;
         }
 
-        Universe {
-            width,
-            height,
-            cells,
-            buffer,
-        }
+        universe
     }
 
     pub fn render(&self) -> String {
@@ -281,6 +277,10 @@ impl Universe {
             let idx = self.get_index_signed(row, col);
             self.cells.set(idx, true);
         }
+    }
+
+    pub fn set_cell(&mut self, row: u32, col: u32, enabled: bool) {
+        self.cells.set(self.get_index(row, col), enabled);
     }
 }
 
