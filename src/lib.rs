@@ -139,9 +139,6 @@ impl Universe {
         let size = (width * height) as usize;
         let mut cells = FixedBitSet::with_capacity(size);
         let buffer = FixedBitSet::with_capacity(size);
-        for idx in 0..size {
-            cells.set(idx, Math::random() >= 0.5);
-        }
 
         Universe {
             width,
@@ -154,8 +151,6 @@ impl Universe {
     pub fn new_copperhead(width: u32, height: u32) -> Universe {
         utils::set_panic_hook();
         let mut universe = Universe::new(width, height);
-        // set width to clear cells
-        universe.set_width(width);
         let top_offset = 32;
         let left_offset = 32;
         let copperhead = [
@@ -183,6 +178,12 @@ impl Universe {
         }
 
         universe
+    }
+
+    pub fn seed_random(&mut self) {
+        for idx in 0..self.width * self.height {
+            self.cells.set(idx as usize, Math::random() >= 0.5);
+        }
     }
 
     pub fn render(&self) -> String {
