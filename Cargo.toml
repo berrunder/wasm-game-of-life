@@ -1,7 +1,7 @@
 [package]
-name = "@berrunder/wasm-game-of-life"
+name = "wasm-game-of-life"
 version = "0.1.0"
-authors = ["Alexander Cherkashin <sanchesandr@gmail.com>"]
+authors = ["Alexander Cherkashin <alexander.cherkashin@csssr.com>"]
 edition = "2018"
 
 [lib]
